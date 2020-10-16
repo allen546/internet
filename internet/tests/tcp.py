@@ -1,5 +1,5 @@
 from server.tcp import *
-class MyHandler:
+class MyHandler(handlers.Handler):
     def handle(self, data):
         if data != b'exit':
             return data, False

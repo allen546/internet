@@ -1,7 +1,9 @@
 from socket import *
 import ssl
 class TCPServer:
-    def __init__(self, addr, handler, ssl=False, ssl_cert=None, cafile=None, threaded=False, workers=1):
+    class Error(Exception):
+        pass
+    def __init__(self, addr, handler, ssl=False, ssl_context=None, threaded=False, workers=1):
         self._socket = socket()
         self.ssl = ssl
         self.addr = addr
@@ -10,9 +12,7 @@ class TCPServer:
         self.history = []
         self.threaded = threaded
         if ssl:
-            context = SSLContext(ssl_protocol, cafile)
-            context.load_default_certs(purpose=Purpose.SERVER_AUTH)
-            context.load_cert_chains(ssl_cert)
+            self.context = ssl_context
             self._socket = context.wrap_socket(self._socket, server_side=True, do_handshake_on_connect=True, suppress_ragged_eofs=True, server_hostname=None, session=None)
         self._handler = handler()
         self.workers = workers
@@ -33,15 +33,19 @@ class TCPServer:
                 conn.sendall(data)
                 self.history.append('SEND ' + repr(data))
     def run(self):
-        if self.threaded:
-            self.threads = []
-            import threading
-            try:
-                for i in range(self.workers):
-                    thread = threading.Thread(target=self._run, daemon=True)
-                    self.threads.append(thread)
-                    thread.start()
-            except:
-                raise SystemExit
-        else:
-            self._run()
+        try:
+            if self.threaded:
+                self.threads = []
+                import threading
+                try:
+                    for i in range(self.workers):
+                        thread = threading.Thread(target=self._run, daemon=True)
+                        self.threads.append(thread)
+                        thread.start()
+                except:
+                    raise SystemExit
+        
+            else:
+                self._run()
+        except Exception as e:
+            raise self.Error(e) from None

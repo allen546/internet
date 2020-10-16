@@ -1,5 +1,6 @@
 import socket
 class UDPServer:
+    class Error: pass
     def __init__(self, addr, handler, addr_family=socket.AF_INET):
         self._socket = socket.socket(addr_family, socket.SOCK_DGRAM)
         self.addr = addr
@@ -18,5 +19,8 @@ class UDPServer:
             self._socket.sendto(data, addr)
             self.history.append(f'SEND {data} TO {addr}')
     def run(self):
-        self._run()
+        try:
+            self._run()
+        except Exception as e:
+            raise self.Error(e) from None
             
